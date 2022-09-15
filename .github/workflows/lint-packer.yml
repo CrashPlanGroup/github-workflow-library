@@ -4,7 +4,7 @@ on:
   workflow_call:
 
 jobs:
-  lint-terraform:
+  lint-packer:
     runs-on: self-hosted
     steps:
       - name: Check out code
