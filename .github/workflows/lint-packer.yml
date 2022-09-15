@@ -1,0 +1,23 @@
+name: Lint Packer
+
+on:
+  workflow_call:
+
+jobs:
+  lint-terraform:
+    runs-on: self-hosted
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Packer fmt
+        uses: docker://hashicorp/packer:light
+        with:
+          entrypoint: packer
+          args: fmt -check -diff .
+
+      - name: Packer validate
+        uses: docker://hashicorp/packer:light
+        with:
+          entrypoint: packer
+          args: validate -syntax-only .
