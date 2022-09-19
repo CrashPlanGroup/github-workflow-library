@@ -1,10 +1,15 @@
-name: Go
+name: Lint and Test Golang
 
 on:
   workflow_call:
+    inputs:
+      codecov:
+        default: false
+        required: false
+        type: boolean
 
 jobs:
-  test:
+  lint-golang:
     runs-on: self-hosted
     steps:
       - name: Set up Go
@@ -14,6 +19,22 @@ jobs:
 
       - name: Check out Source Code
         uses: actions/checkout@v3
+
+      - name: Set CICD Cache Paths
+        id: cache-paths
+        run: |
+          echo "::set-output name=go-build::$(go env GOCACHE)"
+          echo "::set-output name=go-mod::$(go env GOMODCACHE)"
+
+      - name: Setup CICD Cache
+        uses: actions/cache@v3
+        with:
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          path: |
+            ${{ steps.cache-paths.outputs.go-build }}
+            ${{ steps.cache-paths.outputs.go-mod }}
+          restore-keys: |
+            ${{ runner.os }}-go-
 
       - name: Get dependencies
         run: go mod download
@@ -30,3 +51,18 @@ jobs:
         run: |
           go get -u github.com/kisielk/errcheck
           errcheck ./...
+
+      - name: Test
+        run: |
+          go test ./...
+          go test -race ./...
+
+      - name: Measure Coverage
+        if: ${{ inputs.codecov }}
+        run: go test -v -covermode=atomic -coverprofile=coverage.out ./...
+
+      - name: Upload Coverage to Codecov
+        if: ${{ inputs.codecov }}
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.out
