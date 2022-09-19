@@ -6,16 +6,15 @@ on:
       docker_image_name:
         required: true
         type: string
+    secrets:
       TwistlockURL:
         required: true
-        type: string
-    secrets:
       TwistlockUsername:
         required: true
       TwistlockPassword:
         required: true
 
-jobs: 
+jobs:
   twistlock:
     runs-on: self-hosted
     steps:
