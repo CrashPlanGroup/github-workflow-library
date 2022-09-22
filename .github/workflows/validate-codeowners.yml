@@ -2,13 +2,18 @@ name: Validate Codeowners
 
 on:
   workflow_call:
+    inputs:
+      usePublicRunner:
+        default: false
+        required: false
+        type: boolean
     secrets:
       GithubAccessToken:
         required: true
 
 jobs:
   validate-codeowners:
-    runs-on: self-hosted
+    runs-on: ${{ (inputs.usePublicRunner && 'ubuntu-latest') || 'self-hosted' }}
     steps:
       - name: Check out Source Code
         uses: actions/checkout@v3

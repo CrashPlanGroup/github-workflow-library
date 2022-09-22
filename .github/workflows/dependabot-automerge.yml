@@ -2,13 +2,18 @@ name: Dependabot auto-merge
 
 on:
   workflow_call:
+    inputs:
+      usePublicRunner:
+        default: false
+        required: false
+        type: boolean
     secrets:
       gh_token:
         required: true
 
 jobs:
   dependabot:
-    runs-on: self-hosted
+    runs-on: ${{ (inputs.usePublicRunner && 'ubuntu-latest') || 'self-hosted' }}
     if: ${{ github.actor == 'dependabot[bot]' }}
     steps:
       - name: Dependabot metadata

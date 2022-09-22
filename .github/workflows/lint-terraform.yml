@@ -2,10 +2,15 @@ name: Lint Terraform
 
 on:
   workflow_call:
+    inputs:
+      usePublicRunner:
+        default: false
+        required: false
+        type: boolean
 
 jobs:
   lint-terraform:
-    runs-on: self-hosted
+    runs-on: ${{ (inputs.usePublicRunner && 'ubuntu-latest') || 'self-hosted' }}
     steps:
       - name: Check out code
         uses: actions/checkout@v3

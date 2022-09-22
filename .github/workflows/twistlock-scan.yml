@@ -6,6 +6,10 @@ on:
       docker_image_name:
         required: true
         type: string
+      usePublicRunner:
+        default: false
+        required: false
+        type: boolean
     secrets:
       TwistlockURL:
         required: true
@@ -16,7 +20,7 @@ on:
 
 jobs:
   twistlock:
-    runs-on: self-hosted
+    runs-on: ${{ (inputs.usePublicRunner && 'ubuntu-latest') || 'self-hosted' }}
     steps:
       - name: Check out Source Code
         uses: actions/checkout@v3
