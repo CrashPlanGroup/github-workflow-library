@@ -7,10 +7,14 @@ on:
         default: false
         required: false
         type: boolean
+      usePublicRunner:
+        default: false
+        required: false
+        type: boolean
 
 jobs:
   lint-golang:
-    runs-on: self-hosted
+    runs-on: ${{ (inputs.usePublicRunner && 'ubuntu-latest') || 'self-hosted' }}
     steps:
       - name: Set up Go
         uses: actions/setup-go@v3

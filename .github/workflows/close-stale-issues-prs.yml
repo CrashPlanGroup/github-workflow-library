@@ -2,10 +2,15 @@ name: Close Stale Issues and PRs
 
 on:
   workflow_call:
+    inputs:
+      usePublicRunner:
+        default: false
+        required: false
+        type: boolean
 
 jobs:
   stale:
-    runs-on: self-hosted
+    runs-on: ${{ (inputs.usePublicRunner && 'ubuntu-latest') || 'self-hosted' }}
     steps:
       - uses: actions/stale@v6
         with:
