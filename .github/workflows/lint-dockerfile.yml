@@ -10,7 +10,7 @@ on:
 
 jobs:
   lint-dockerfile:
-    runs-on: ${{ (inputs.usePublicRunner && fromJSON('[ "ubuntu-latest" ]')) || 'self-hosted' }}
+    runs-on: ${{ (inputs.usePublicRunner && 'ubuntu-latest') || 'self-hosted' }}
     steps:
       - name: Check out code
         uses: actions/checkout@v3
