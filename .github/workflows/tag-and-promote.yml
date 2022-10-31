@@ -27,7 +27,7 @@ jobs:
     # will increment tag per semver rules.
     - name: Bump version and push tag
       id: versioner
-      uses: mathieudutour/github-tag-action@v6.0
+      uses: mathieudutour/github-tag-action@v6.1
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         custom_release_rules: "PATCH:patch,MINOR:minor,MAJOR:major"
