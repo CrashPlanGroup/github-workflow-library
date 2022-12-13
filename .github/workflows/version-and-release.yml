@@ -25,10 +25,9 @@ jobs:
           github_token: ${{ secrets.gh_token }}
 
       - name: Create a GitHub release
-        uses: actions/create-release@v1.1.4
         env:
-          GITHUB_TOKEN: ${{ secrets.gh_token }}
-        with:
-          tag_name: ${{ steps.versioner.outputs.new_tag }}
-          release_name: Release ${{ steps.versioner.outputs.new_tag }}
-          body: ${{ steps.versioner.outputs.changelog }}
+          GH_TOKEN: ${{ secrets.gh_token }}
+          NOTES: ${{ steps.versioner.outputs.changelog }}
+          TAG: ${{ steps.versioner.outputs.new_tag }}
+          TITLE: Release ${{ steps.versioner.outputs.new_tag }}
+        run: gh release create "$TAG" -t "$TITLE" -n "$NOTES"
