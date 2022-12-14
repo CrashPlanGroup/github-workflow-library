@@ -16,24 +16,24 @@ jobs:
     outputs:
       new_tag: ${{ steps.versioner.outputs.new_tag }}
     steps:
-    - name: Checkout
-      uses: actions/checkout@v3.2.0
-      with:
-        # checkout  defaults to checking out a single ref, but we need more
-        # history to find AMIs from previous commits
-        fetch-depth: 0
+      - name: Checkout
+        uses: actions/checkout@v3.2.0
+        with:
+          # checkout  defaults to checking out a single ref, but we need more
+          # history to find AMIs from previous commits
+          fetch-depth: 0
 
-    # create a version tag (v1.2.3) on master.  presence of PATCH:, MINOR:, or MAJOR: in commit message
-    # will increment tag per semver rules.
-    - name: Bump version and push tag
-      id: versioner
-      uses: mathieudutour/github-tag-action@v6.1
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        custom_release_rules: "PATCH:patch,MINOR:minor,MAJOR:major"
-        dry_run: false
+      # create a version tag (v1.2.3) on master.  presence of PATCH:, MINOR:, or MAJOR: in commit message
+      # will increment tag per semver rules.
+      - name: Bump version and push tag
+        id: versioner
+        uses: mathieudutour/github-tag-action@v6.1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          custom_release_rules: "PATCH:patch,MINOR:minor,MAJOR:major"
+          dry_run: false
 
-    - name: Create a GitHub release
+      - name: Create a GitHub release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NOTES: ${{ steps.versioner.outputs.changelog }}
@@ -46,57 +46,57 @@ jobs:
     needs: tag
     runs-on: self-hosted
     steps:
-    - name: Checkout
-      uses: actions/checkout@v3.2.0
-      with:
-        # checkout  defaults to checking out a single ref, but we need more
-        # history to find AMIs from previous commits
-        fetch-depth: 0
+      - name: Checkout
+        uses: actions/checkout@v3.2.0
+        with:
+          # checkout  defaults to checking out a single ref, but we need more
+          # history to find AMIs from previous commits
+          fetch-depth: 0
 
-    #  # use a Vault token (from GitHub Secrets) to get AWS creds from Vault
-    - name: Import Secrets
-      id: secrets
-      uses: hashicorp/vault-action@v2.4.3
-      with:
-        url: ${{ secrets.vaultURL }}
-        method: approle
-        roleId: ${{ secrets.prodRoleId }}
-        secretId: ${{ secrets.prodSecretId }}
-        secrets: |
-            /accounts/aws/sts/amis-cicd access_key | AWS_ACCESS_KEY_ID ;
-            /accounts/aws/sts/amis-cicd secret_key | AWS_SECRET_ACCESS_KEY ;
-            /accounts/aws/sts/amis-cicd security_token | AWS_SECURITY_TOKEN ;
+      #  # use a Vault token (from GitHub Secrets) to get AWS creds from Vault
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v2.4.3
+        with:
+          url: ${{ secrets.vaultURL }}
+          method: approle
+          roleId: ${{ secrets.prodRoleId }}
+          secretId: ${{ secrets.prodSecretId }}
+          secrets: |
+              /accounts/aws/sts/amis-cicd access_key | AWS_ACCESS_KEY_ID ;
+              /accounts/aws/sts/amis-cicd secret_key | AWS_SECRET_ACCESS_KEY ;
+              /accounts/aws/sts/amis-cicd security_token | AWS_SECURITY_TOKEN ;
 
-    - name: Update aws cli
-      uses: unfor19/install-aws-cli-action@v1.0.5
+      - name: Update aws cli
+        uses: unfor19/install-aws-cli-action@v1.0.5
 
-    - name: Promote latest amis
-      run: |
-        export AWS_DEFAULT_REGION="us-east-1"; \
-        previous_previous_merge_to_master=$(git log --format=oneline --merges --first-parent master | head -n 2 | tail -n 1 | cut -f1 -d' '); \
-        echo "found previous_previous merge to master $previous_previous_merge_to_master"; \
-        for sha in `git log --format=oneline | cut -f1 -d' '`; do echo "Investigating sha $sha."; \
-        if [ $sha == $previous_previous_merge_to_master ]; then echo "No commits in previous PR produced AMIs.  nothing to do..." && break; fi; \
-        ami_list=""; \
-        regions="us-east-1 us-west-2 eu-west-1 ap-southeast-2 ap-southeast-1 eu-central-1"; \
-        for region in $regions; do \
-        amis=$(aws ec2 describe-images --region $region --filters "Name=tag-key,Values=source_commit" "Name=tag-value,Values=$sha" | jq -r ".Images[].ImageId" 2> /dev/null); \
-        ami_list=$(echo $ami_list$amis | sed 's/$/ /'); done; \
-        if [ -z "$(echo $ami_list | sed 's/ //')" ]; then echo "Commit $sha produced no AMIs.  Skipping..." && continue; fi; \
-        echo "Commit $sha produced AMIs:$ami_list"; \
-        increment=`expr $(echo $ami_list | wc -w) / $(echo $regions | wc -w)`; \
-        start=1; \
-        end=$increment; \
-        for region in $regions; do for ami in $(echo $ami_list | cut -d ' ' -f$(echo `seq $start $end` | sed 's/ /,/g')); do \
-        ami_type=$(aws ec2 describe-tags --region $region --filters "Name=resource-id,Values=$ami"  | jq  '.Tags[]|select(.Key=="workflow").Value'); \
-        echo "ami found $ami in $region for type $ami_type."; \
-        echo "Writing version tag ${{ needs.tag.outputs.new_tag }} to $ami in $region for type $ami_type."; \
-        aws ec2 create-tags --region $region --resources $ami --tags Key=version,Value=${{ needs.tag.outputs.new_tag }}; done; \
-        start=`expr $start + $increment`; \
-        end=`expr $end + $increment`; \
-        done && break; \
-        done && echo "done"
-      env:
-        AWS_ACCESS_KEY_ID: ${{ steps.secrets.outputs.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ steps.secrets.outputs.AWS_SECRET_ACCESS_KEY }}
-        AWS_SESSION_TOKEN: ${{ steps.secrets.outputs.AWS_SECURITY_TOKEN }}
+      - name: Promote latest amis
+        run: |
+          export AWS_DEFAULT_REGION="us-east-1"; \
+          previous_previous_merge_to_master=$(git log --format=oneline --merges --first-parent master | head -n 2 | tail -n 1 | cut -f1 -d' '); \
+          echo "found previous_previous merge to master $previous_previous_merge_to_master"; \
+          for sha in `git log --format=oneline | cut -f1 -d' '`; do echo "Investigating sha $sha."; \
+          if [ $sha == $previous_previous_merge_to_master ]; then echo "No commits in previous PR produced AMIs.  nothing to do..." && break; fi; \
+          ami_list=""; \
+          regions="us-east-1 us-west-2 eu-west-1 ap-southeast-2 ap-southeast-1 eu-central-1"; \
+          for region in $regions; do \
+          amis=$(aws ec2 describe-images --region $region --filters "Name=tag-key,Values=source_commit" "Name=tag-value,Values=$sha" | jq -r ".Images[].ImageId" 2> /dev/null); \
+          ami_list=$(echo $ami_list$amis | sed 's/$/ /'); done; \
+          if [ -z "$(echo $ami_list | sed 's/ //')" ]; then echo "Commit $sha produced no AMIs.  Skipping..." && continue; fi; \
+          echo "Commit $sha produced AMIs:$ami_list"; \
+          increment=`expr $(echo $ami_list | wc -w) / $(echo $regions | wc -w)`; \
+          start=1; \
+          end=$increment; \
+          for region in $regions; do for ami in $(echo $ami_list | cut -d ' ' -f$(echo `seq $start $end` | sed 's/ /,/g')); do \
+          ami_type=$(aws ec2 describe-tags --region $region --filters "Name=resource-id,Values=$ami"  | jq  '.Tags[]|select(.Key=="workflow").Value'); \
+          echo "ami found $ami in $region for type $ami_type."; \
+          echo "Writing version tag ${{ needs.tag.outputs.new_tag }} to $ami in $region for type $ami_type."; \
+          aws ec2 create-tags --region $region --resources $ami --tags Key=version,Value=${{ needs.tag.outputs.new_tag }}; done; \
+          start=`expr $start + $increment`; \
+          end=`expr $end + $increment`; \
+          done && break; \
+          done && echo "done"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ steps.secrets.outputs.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ steps.secrets.outputs.AWS_SECRET_ACCESS_KEY }}
+          AWS_SESSION_TOKEN: ${{ steps.secrets.outputs.AWS_SECURITY_TOKEN }}
