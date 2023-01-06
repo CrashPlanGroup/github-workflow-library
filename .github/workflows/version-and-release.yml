@@ -16,7 +16,7 @@ jobs:
     runs-on: ${{ (inputs.usePublicRunner && 'ubuntu-latest') || 'self-hosted' }}
     steps:
       - name: Check out Source Code
-        uses: actions/checkout@v3.2.0
+        uses: actions/checkout@v3.3.0
 
       - name: Bump version and push tag
         id: versioner
